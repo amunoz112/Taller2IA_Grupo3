@@ -16,7 +16,8 @@ def configuration_score(
       redundancia y exposición en ese orden.
     """
     # TODO: Add your code here
-    raise NotImplementedError("Punto 1: implemente configuration_score")
+    cobertura, redundancia, exposicion = problem.score_components(configuration)
+    return cobertura -redundancia -exposicion
 
 
 def hill_climbing(
@@ -39,7 +40,37 @@ def hill_climbing(
       mejoras aceptadas antes de retornar el OptimizationResult.
     """
     # TODO: Add your code here
-    raise NotImplementedError("Punto 1: implemente hill_climbing")
+    cima = False
+    evaluations =0
+    best_config = initial_configuration
+    best_score = configuration_score(problem,initial_configuration)
+    evaluations+=1
+    iterations = 0
+    history =[best_config]
+    score_history = [best_score]
+    while not cima and iterations<max_iterations:
+        vecinos = problem.neighbors(best_config)
+        best_current_config = best_config
+        current_best_score = best_score
+        
+        for v in vecinos:            
+            v_score = configuration_score(problem,v)
+            evaluations+=1
+            
+            if v_score>current_best_score:
+                best_current_config = v
+                current_best_score = v_score
+                
+        iterations +=1
+        if best_config==best_current_config:
+            cima==True
+        else: 
+            score_history.append(current_best_score)
+            history.append(best_current_config)
+            best_score = current_best_score
+            best_config = best_current_config
+        
+    return OptimizationResult(best_config,best_score,evaluations,iterations,history,score_history)
 
 
 def cooling_schedule(initial_temperature: float, cooling_rate: float, iteration: int) -> float:
