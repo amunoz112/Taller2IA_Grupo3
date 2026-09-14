@@ -63,7 +63,7 @@ def hill_climbing(
                 
         iterations +=1
         if best_config==best_current_config:
-            cima==True
+            cima=True
         else: 
             score_history.append(current_best_score)
             history.append(best_current_config)
