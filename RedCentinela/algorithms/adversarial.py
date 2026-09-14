@@ -41,7 +41,55 @@ class MinimaxAgent(MultiAgentSearchAgent):
           la raíz. Retorne la acción de MAX y conserve la primera en los empates.
         """
         # TODO: Add your code here
-        raise NotImplementedError("Punto 4: implemente MinimaxAgent.get_action")
+        self.nodes_evaluated = 0
+        
+        def minimax_value(current_state: GameState,remaining_depth: int, index_agente: int):
+          self.nodes_evaluated +=1
+          
+          if current_state.is_win() or current_state.is_lose() or remaining_depth==0:
+            return evaluation_function(current_state)
+          
+          actions = current_state.get_legal_actions(index_agente)
+          if not actions:
+            return evaluation_function(current_state)
+          
+          next_agente = (index_agente +1) % current_state.get_num_agents()
+          if  index_agente == 0:
+            best_value = float("-inf")
+            for action in actions:
+              succesor = current_state.generate_successor(index_agente,action)
+              value = minimax_value(succesor,remaining_depth-1,next_agente)
+              if value> best_value:
+                best_value = value
+            return best_value
+          else: 
+            best_value = float('inf')
+            for action in actions: 
+              succesor = current_state.generate_successor(index_agente,action)
+              value = minimax_value(succesor, remaining_depth-1,next_agente)
+              if value<best_value:
+                best_value=value
+            return best_value
+        
+        self.nodes_evaluated+=1
+        if state.is_win() or state.is_lose():
+          return None
+        actions = state.get_legal_actions(0)
+        if not actions:
+          return None
+        
+        best_action = None
+        best_value = float('-inf')
+        for action in actions:
+          succesor = state.generate_successor(0,action)
+          value = minimax_value(succesor,self.depth-1,1)
+          if value>best_value:
+            best_value=value
+            best_action = action
+        return best_action
+
+
+    
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
