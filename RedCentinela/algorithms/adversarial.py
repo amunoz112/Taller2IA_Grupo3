@@ -110,4 +110,102 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           y corte si valor <= alpha.
         """
         # TODO: Add your code here
-        raise NotImplementedError("Punto 5: implemente AlphaBetaAgent.get_action")
+        self.nodes_evaluated = 0
+
+        def alphabeta_value(current_state, remaining_depth, agent_index, alpha, beta):
+            self.nodes_evaluated += 1
+
+            if (
+                current_state.is_win()
+                or current_state.is_lose()
+                or remaining_depth == 0
+            ):
+                return evaluation_function(current_state)
+
+            actions = current_state.get_legal_actions(agent_index)
+
+            if not actions:
+                return evaluation_function(current_state)
+
+            next_agent = (agent_index + 1) % current_state.get_num_agents()
+
+            if agent_index == 0:
+                value = float("-inf")
+
+                for action in actions:
+                    successor = current_state.generate_successor(agent_index, action)
+
+                    value = max(
+                        value,
+                        alphabeta_value(
+                            successor,
+                            remaining_depth - 1,
+                            next_agent,
+                            alpha,
+                            beta,
+                        ),
+                    )
+
+                    if value >= beta:
+                        break
+
+                    alpha = max(alpha, value)
+
+                return value
+
+            value = float("inf")
+
+            for action in actions:
+                successor = current_state.generate_successor(agent_index, action)
+
+                value = min(
+                    value,
+                    alphabeta_value(
+                        successor,
+                        remaining_depth - 1,
+                        next_agent,
+                        alpha,
+                        beta,
+                    ),
+                )
+
+                if value <= alpha:
+                    break
+
+                beta = min(beta, value)
+
+            return value
+
+        self.nodes_evaluated += 1
+
+        if state.is_win() or state.is_lose():
+            return None
+
+        actions = state.get_legal_actions(0)
+
+        if not actions:
+            return None
+
+        best_action = None
+        best_value = float("-inf")
+        alpha = float("-inf")
+        beta = float("inf")
+
+        for action in actions:
+            successor = state.generate_successor(0, action)
+
+            value = alphabeta_value(
+                successor,
+                self.depth - 1,
+                1,
+                alpha,
+                beta,
+            )
+
+            if value > best_value:
+                best_value = value
+                best_action = action
+
+            alpha = max(alpha, best_value)
+
+        return best_action

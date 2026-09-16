@@ -34,9 +34,42 @@ def evaluation_function(state: GameState) -> float:
       real por el mapa respetando los muros.
     - Maneje conjuntos vacíos y distancias infinitas, y mantenga todo estado no
       terminal estrictamente entre -1000 y +1000.
-    """
+    """ 
+    # TODO: Add your code here
     if state.is_win() or state.is_lose():
         return base_evaluation_function(state)
 
-    # TODO: Add your code here
-    return base_evaluation_function(state)
+    value = float(state.get_score())
+    defender = state.defender_position
+    intruder = state.intruder_position
+    terminals = state.pending_terminals
+    value -= 30.0 * len(terminals)
+
+    if terminals:
+        distances = [
+            state.layout.distance(defender, terminal)
+            for terminal in terminals
+        ]
+
+        finite_distances = [
+            distance
+            for distance in distances
+            if math.isfinite(distance)
+        ]
+
+        if finite_distances:
+            value -= 5.0 * min(finite_distances)
+
+    intruder_distance = state.layout.distance(defender, intruder)
+
+    if math.isfinite(intruder_distance):
+        if intruder_distance <= 1:
+            value -= 200.0
+        elif intruder_distance == 2:
+            value -= 80.0
+        else:
+            value += min(intruder_distance, 10) * 3.0
+
+    value += 2.0 * len(state.get_legal_actions(0))
+
+    return max(-999.0, min(999.0, value))
