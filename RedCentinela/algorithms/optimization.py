@@ -79,8 +79,7 @@ def cooling_schedule(initial_temperature: float, cooling_rate: float, iteration:
 
     Esta función se invoca desde simulated_annealing en cada iteración.
     """
-    # TODO: Add your code here
-    raise NotImplementedError("Punto 2: implemente cooling_schedule")
+    return initial_temperature * (cooling_rate ** iteration)
 
 
 def simulated_annealing(
@@ -111,7 +110,66 @@ def simulated_annealing(
     minimum_temperature = 1e-9
 
     # TODO: Add your code here
-    raise NotImplementedError("Punto 2: implemente simulated_annealing")
+    current = initial_configuration
+    current_score = configuration_score(problem, current)
+
+    best_config = current
+    best_score = current_score
+
+    evaluations = 1
+    iterations = 0
+
+    history = [current]
+    score_history = [current_score]
+
+    while iterations < max_iterations:
+        temperature = cooling_schedule(
+            initial_temperature,
+            cooling_rate,
+            iterations
+        )
+
+        if temperature <= minimum_temperature:
+            break
+
+        vecinos = problem.neighbors(current)
+
+        if not vecinos:
+            break
+
+        candidate = rng.choice(vecinos)
+        candidate_score = configuration_score(problem, candidate)
+        evaluations += 1
+
+        delta = candidate_score - current_score
+
+        if delta > 0:
+            current = candidate
+            current_score = candidate_score
+        else:
+            probability = math.exp(delta / temperature)
+
+            if rng.random() < probability:
+                current = candidate
+                current_score = candidate_score
+
+        if current_score > best_score:
+            best_config = current
+            best_score = current_score
+
+        history.append(current)
+        score_history.append(current_score)
+
+        iterations += 1
+
+    return OptimizationResult(
+        best_config,
+        best_score,
+        evaluations,
+        iterations,
+        history,
+        score_history
+    )
 
 
 def one_point_crossover(
@@ -133,7 +191,10 @@ def one_point_crossover(
         return parent1, parent2
 
     # TODO: Add your code here
-    raise NotImplementedError("Punto 3: implemente one_point_crossover")
+    cut = rng.randint(1, len(parent1) - 1)
+    child1 = parent1[:cut] + parent2[cut:]
+    child2 = parent2[:cut] + parent1[cut:]
+    return child1, child2
 
 
 def swap_mutation(
@@ -153,7 +214,30 @@ def swap_mutation(
     - Retorne una tupla nueva; no modifique el individuo recibido.
     """
     # TODO: Add your code here
-    raise NotImplementedError("Punto 3: implemente swap_mutation")
+    if rng.random() >= mutation_probability:
+        return individual
+
+    activos = []
+    inactivos = []
+
+    for i in range(len(individual)):
+        if individual[i] == 1:
+            activos.append(i)
+        else:
+            inactivos.append(i)
+
+    if not activos or not inactivos:
+        return individual
+
+    activo = rng.choice(activos)
+    inactivo = rng.choice(inactivos)
+
+    mutated = list(individual)
+
+    mutated[activo] = 0
+    mutated[inactivo] = 1
+
+    return tuple(mutated)
 
 
 def genetic_algorithm(
@@ -190,4 +274,92 @@ def genetic_algorithm(
         raise ValueError("elite_size debe estar entre 0 y population_size")
 
     # TODO: Add your code here
-    raise NotImplementedError("Punto 3: implemente genetic_algorithm")
+    population = problem.initial_population(population_size, rng)
+
+    evaluations = 0
+
+    scores = []
+
+    for individual in population:
+        score = configuration_score(problem, individual)
+        scores.append(score)
+        evaluations += 1
+
+    best_index = scores.index(max(scores))
+    best_config = population[best_index]
+    best_score = scores[best_index]
+
+    history = [best_config]
+    score_history = [best_score]
+
+    for generation in range(generations):
+
+        ordenados = sorted(
+            zip(population, scores),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        new_population = []
+
+        for i in range(elite_size):
+            new_population.append(ordenados[i][0])
+
+        while len(new_population) < population_size:
+            parent1 = problem.tournament_select(population, scores, rng)
+            parent2 = problem.tournament_select(population, scores, rng)
+
+            child1, child2 = one_point_crossover(
+                parent1,
+                parent2,
+                rng
+            )
+
+            child1 = problem.repair_configuration(child1, rng)
+            child2 = problem.repair_configuration(child2, rng)
+
+            child1 = swap_mutation(
+                child1,
+                mutation_probability,
+                rng
+            )
+
+            child2 = swap_mutation(
+                child2,
+                mutation_probability,
+                rng
+            )
+
+            new_population.append(child1)
+
+            if len(new_population) < population_size:
+                new_population.append(child2)
+
+        population = new_population
+
+        scores = []
+
+        for individual in population:
+            score = configuration_score(problem, individual)
+            scores.append(score)
+            evaluations += 1
+
+        generation_best_index = scores.index(max(scores))
+        generation_best = population[generation_best_index]
+        generation_best_score = scores[generation_best_index]
+
+        if generation_best_score > best_score:
+            best_config = generation_best
+            best_score = generation_best_score
+
+        history.append(best_config)
+        score_history.append(best_score)
+
+    return OptimizationResult(
+        best_config,
+        best_score,
+        evaluations,
+        generations,
+        history,
+        score_history
+    )
